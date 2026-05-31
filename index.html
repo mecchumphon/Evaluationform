@@ -118,6 +118,39 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // --- Compress Image Helper (Moved to top of scope) ---
+        const resizeImage = (file, maxWidth = 400, maxHeight = 400) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.75)); 
+                    };
+                };
+            });
+        };
+
         // --- Icons ---
         const Icons = {
             LayoutDashboard: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>,
@@ -508,7 +541,6 @@
                 const form = formList.find(f => f.id === formId);
                 setSelectedForm(form);
                 if (form) {
-                    // Start clean: DO NOT default any score. Ensure evaluator selects everything explicitly.
                     setEvalScores({});
                     setIsConfirmedScore({});
                 } else {
@@ -522,7 +554,6 @@
                     ...prev,
                     [cId]: Number(scoreVal)
                 }));
-                // Flag that this criterion has an active evaluator choice
                 setIsConfirmedScore(prev => ({
                     ...prev,
                     [cId]: true
@@ -891,7 +922,7 @@
             }
 
             return (
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white/40">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white/40 font-sans">
                     <div className="max-w-5xl mx-auto space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -1305,126 +1336,6 @@
             );
         };
 
-        // --- Component: SubjectsView ---
-        const SubjectsView = ({ subjectList, onSaveSubject, onDeleteSubject }) => {
-            const [isAdding, setIsAdding] = useState(false);
-            const [newSub, setNewSub] = useState({ code: '', name: '', dept: '' });
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (!newSub.code || !newSub.name) return;
-                onSaveSubject({
-                    ...newSub,
-                    id: `sub_${Date.now()}`
-                });
-                setNewSub({ code: '', name: '', dept: '' });
-                setIsAdding(false);
-            };
-
-            return (
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-white/40">
-                    <div className="max-w-4xl mx-auto space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-800">จัดการรายวิชานักศึกษาแพทย์</h2>
-                                <p className="text-sm text-gray-500">รายวิชาแพทย์แผนกต่างๆ สำหรับกลุ่มงานแพทยศาสตรศึกษา</p>
-                            </div>
-                            <button 
-                                onClick={() => setIsAdding(!isAdding)}
-                                className="flex items-center px-4 py-2 bg-mac-blue text-white rounded-lg text-xs font-semibold shadow hover:bg-blue-600 transition"
-                            >
-                                {isAdding ? "ปิดฟอร์ม" : "เพิ่มรายวิชา"}
-                            </button>
-                        </div>
-
-                        {isAdding && (
-                            <form onSubmit={handleSubmit} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4 items-end font-sans">
-                                <div>
-                                    <label className="block text-xs text-gray-500 mb-1">รหัสวิชา</label>
-                                    <input 
-                                        type="text" 
-                                        required 
-                                        placeholder="เช่น พ.401"
-                                        value={newSub.code}
-                                        onChange={(e) => setNewSub({...newSub, code: e.target.value})}
-                                        className="w-full p-2 border rounded text-xs"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500 mb-1">ชื่อวิชา</label>
-                                    <input 
-                                        type="text" 
-                                        required 
-                                        placeholder="เช่น กุมารเวชศาสตร์ 1"
-                                        value={newSub.name}
-                                        onChange={(e) => setNewSub({...newSub, name: e.target.value})}
-                                        className="w-full p-2 border rounded text-xs"
-                                    />
-                                </div>
-                                <div className="flex gap-2">
-                                    <div className="flex-1">
-                                        <label className="block text-xs text-gray-500 mb-1">กลุ่มงาน/กอง</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="กุมารเวชกรรม"
-                                            value={newSub.dept}
-                                            onChange={(e) => setNewSub({...newSub, dept: e.target.value})}
-                                            className="w-full p-2 border rounded text-xs"
-                                        />
-                                    </div>
-                                    <button 
-                                        type="submit"
-                                        className="px-4 py-2 bg-emerald-500 text-white rounded text-xs font-semibold hover:bg-emerald-600 transition shrink-0 h-9"
-                                    >
-                                        บันทึก
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        <div className="bg-white rounded-xl shadow-sm border overflow-hidden font-sans">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-50 border-b text-xs font-bold text-gray-600">
-                                        <th className="p-4">รหัสวิชา</th>
-                                        <th className="p-4">ชื่อรายวิชา</th>
-                                        <th className="p-4">สาขาวิชา/แผนก</th>
-                                        <th className="p-4 text-right">การจัดการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y text-xs text-gray-700">
-                                    {subjectList.map(s => (
-                                        <tr key={s.id} className="hover:bg-gray-50">
-                                            <td className="p-4 font-bold text-mac-blue">{s.code}</td>
-                                            <td className="p-4 font-semibold">{s.name}</td>
-                                            <td className="p-4">{s.dept || "-"}</td>
-                                            <td className="p-4 text-right">
-                                                <button 
-                                                    onClick={() => {
-                                                        if(confirm(`ต้องการลบวิชา "${s.code} ${s.name}"?`)){
-                                                            onDeleteSubject(s.id);
-                                                        }
-                                                    }}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 rounded"
-                                                >
-                                                    <Icons.Trash width="16" height="16" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {subjectList.length === 0 && (
-                                        <tr>
-                                            <td colSpan="4" className="p-8 text-center text-gray-400">ยังไม่มีข้อมูลรายวิชาแพทย์</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
         // --- Component: StudentsView ---
         const StudentsView = ({ studentList, onSaveStudent, onDeleteStudent, evalList, formList }) => {
             const [isAdding, setIsAdding] = useState(false);
@@ -1462,6 +1373,14 @@
                 if (file) {
                     const compressed = await resizeImage(file, 200, 200);
                     setStudentForm(prev => ({ ...prev, avatar: compressed }));
+                }
+            };
+
+            // Programmatically trigger hidden file selection input to bypass mobile safari restrictions
+            const triggerPhotoSelection = () => {
+                const fileInput = document.getElementById('student-photo-file-hidden');
+                if (fileInput) {
+                    fileInput.click();
                 }
             };
 
@@ -1617,8 +1536,11 @@
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                                     {/* Photo Upload Container */}
-                                    <div className="flex flex-col items-center justify-center p-3 border rounded-xl bg-gray-50 h-full min-h-[140px] shadow-sm">
-                                        <label className="block text-[10px] text-gray-400 mb-1.5 font-semibold text-center">รูปถ่ายนักศึกษา</label>
+                                    <div 
+                                        onClick={triggerPhotoSelection}
+                                        className="flex flex-col items-center justify-center p-3 border rounded-xl bg-gray-50 h-full min-h-[140px] shadow-sm cursor-pointer hover:bg-gray-100 transition-colors"
+                                    >
+                                        <label className="block text-[10px] text-gray-400 mb-1.5 font-semibold text-center cursor-pointer">รูปถ่ายนักศึกษา</label>
                                         <div className="relative w-24 h-24 bg-gray-200 rounded-xl overflow-hidden flex items-center justify-center border shadow-inner">
                                             {studentForm.avatar ? (
                                                 <img src={studentForm.avatar} alt="Preview" className="w-full h-full object-cover" />
@@ -1630,15 +1552,16 @@
                                             type="file" 
                                             accept="image/*" 
                                             onChange={handleStudentPhotoUpload} 
-                                            id="student-photo-file" 
+                                            id="student-photo-file-hidden" 
                                             className="hidden" 
                                         />
-                                        <label 
-                                            htmlFor="student-photo-file" 
-                                            className="mt-2.5 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-[10px] cursor-pointer font-bold transition shadow-sm"
+                                        <button 
+                                            type="button" 
+                                            onClick={(e) => { e.stopPropagation(); triggerPhotoSelection(); }}
+                                            className="mt-2.5 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-[10px] font-bold transition shadow-sm"
                                         >
                                             เลือกรูปภาพ
-                                        </label>
+                                        </button>
                                     </div>
                                     
                                     <div className="space-y-3 col-span-1 md:col-span-3">
@@ -1740,7 +1663,7 @@
                                 />
                             </div>
 
-                            <div className="flex flex-wrap gap-4 items-center text-xs">
+                            <div className="flex flex-wrap gap-4 items-center text-xs font-sans">
                                 <div className="flex items-center space-x-2">
                                     <span className="text-gray-500 font-medium">กรองปีการศึกษา:</span>
                                     <select 
@@ -1769,7 +1692,7 @@
                                     </select>
                                 </div>
 
-                                <div className="ml-auto text-gray-400 text-[11px]">
+                                <div className="ml-auto text-gray-400 text-[11px] font-sans">
                                     พบนศพ. ทั้งหมด <strong className="text-gray-700 font-bold">{filteredStudents.length}</strong> คน
                                 </div>
                             </div>
@@ -1779,7 +1702,7 @@
                         {/* 1. Mobile Cards Grid View (shown on screen sizes < 768px) */}
                         <div className="grid grid-cols-1 gap-4 md:hidden">
                             {filteredStudents.map(s => (
-                                <div key={s.id} className="bg-white p-4 rounded-xl border shadow-sm space-y-4 flex flex-col justify-between">
+                                <div key={s.id} className="bg-white p-4 rounded-xl border shadow-sm space-y-4 flex flex-col justify-between font-sans">
                                     <div className="flex items-start space-x-4">
                                         {s.avatar ? (
                                             <img src={s.avatar} alt="Avatar" className="w-16 h-16 rounded-xl object-cover border shadow-sm shrink-0" />
@@ -1825,7 +1748,7 @@
                                 </div>
                             ))}
                             {filteredStudents.length === 0 && (
-                                <div className="text-center py-12 text-gray-400 text-xs bg-white rounded-xl border">
+                                <div className="text-center py-12 text-gray-400 text-xs bg-white rounded-xl border font-sans">
                                     ไม่พบรายชื่อนักศึกษาแพทย์ตามเงื่อนไขตัวกรอง
                                 </div>
                             )}
@@ -1903,8 +1826,6 @@
                             </table>
                         </div>
                     </div>
-
-                    {selectedReportStudent && renderReportCard(selectedReportStudent)}
                 </div>
             );
         };
@@ -2148,7 +2069,7 @@
                                         <input type="password" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} placeholder="กรอกรหัสผ่าน" className="w-full p-2.5 border rounded-lg bg-gray-50 outline-none" required />
                                     </div>
                                 </div>
-                                <button type="submit" className="w-full py-2.5 bg-mac-blue text-white rounded-lg text-xs font-bold shadow hover:bg-blue-600 transition font-sans">เข้าสู่ระบบ</button>
+                                <button type="submit" className="w-full py-2.5 bg-mac-blue text-white rounded-lg text-xs font-bold shadow hover:bg-blue-600 transition">เข้าสู่ระบบ</button>
                             </form>
                         </div>
                     </MacOSWindow>
@@ -2160,7 +2081,7 @@
                     {!isSharedAccess && (
                         <>
                             {/* Desktop Sidebar */}
-                            <div className="hidden md:flex w-64 glass-darker border-r border-white/40 flex-col pt-4 shrink-0 font-sans">
+                            <div className="hidden md:flex w-64 glass-darker border-r border-white/40 flex flex-col pt-4 shrink-0 font-sans">
                                 <div className="px-6 mb-6">
                                     <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">MEC CHUMPHON</h2>
                                     <div className="text-xs font-semibold text-gray-700 leading-tight">รพ.ชุมพรเขตรอุดมศักดิ์</div>
@@ -2176,10 +2097,10 @@
 
                             {/* Mobile Drawer Menu */}
                             {isSidebarOpen && (
-                                <div className="fixed inset-0 z-50 flex md:hidden">
+                                <div className="fixed inset-0 z-50 flex md:hidden font-sans">
                                     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>
                                     <div className="relative w-64 max-w-xs bg-white flex flex-col pt-4 h-full shadow-2xl z-10 transition-transform duration-300 font-sans">
-                                        <div className="px-6 mb-6 flex justify-between items-center">
+                                        <div className="px-6 mb-6 flex justify-between items-center font-sans">
                                             <div>
                                                 <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">MEC CHUMPHON</h2>
                                                 <div className="text-xs font-semibold text-gray-700 leading-tight">รพ.ชุมพรเขตรอุดมศักดิ์</div>
@@ -2188,7 +2109,7 @@
                                                 <Icons.X width="20" height="20" />
                                             </button>
                                         </div>
-                                        <div className="flex-1 px-3 space-y-1 overflow-y-auto">
+                                        <div className="flex-1 px-3 space-y-1 overflow-y-auto font-sans">
                                             {sidebarItems.map(item => (
                                                 <button key={item.id} onClick={() => { setActiveMenu(item.id); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition ${activeMenu === item.id ? 'bg-mac-blue text-white shadow' : 'text-gray-700 hover:bg-white/50'}`}>
                                                     {item.icon}<span>{item.label}</span>
