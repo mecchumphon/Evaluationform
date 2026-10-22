@@ -1011,7 +1011,7 @@
             );
         };
 
-        // --- Component: FormEditor ---
+       // --- Component: FormEditor ---
 const FormEditor = ({ form, subjects, onSave, onCancel }) => {
     const [formData, setFormData] = useState(form || {
         id: `form_${Date.now()}`,
@@ -1080,6 +1080,7 @@ const FormEditor = ({ form, subjects, onSave, onCancel }) => {
                 }
             ]`;
 
+            // ✅ เปลี่ยนโมเดลเป็น gemini-1.5-flash เพื่อให้เรียกใช้งานผ่าน v1beta API ได้เสถียร
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKeyToUse}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1338,93 +1339,7 @@ const FormEditor = ({ form, subjects, onSave, onCancel }) => {
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-semibold text-gray-700">หัวข้อการประเมิน (Criteria)</h3>
                                     <button 
-                                        type="button" 
-                                        onClick={addCriterion}
-                                        className="flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-semibold transition"
-                                    >
-                                        <Icons.Plus className="mr-1" />
-                                        เพิ่มเกณฑ์
-                                    </button>
-                                </div>
-
-                                {formData.criteria.map((c, cIdx) => (
-                                    <div key={c.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4 relative">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => removeCriterion(cIdx)}
-                                            className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
-                                        >
-                                            <Icons.X width="18" height="18" />
-                                        </button>
-
-                                        <div className="max-w-[90%] font-sans">
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">หัวข้อ {cIdx + 1}</label>
-                                            <input 
-                                                type="text" 
-                                                value={c.topic} 
-                                                onChange={(e) => updateCriterion(cIdx, 'topic', e.target.value)}
-                                                placeholder="เช่น การสัมภาษณ์ประวัติ หรือ ทักษะกระบวนการสื่อสาร" 
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none text-xs font-semibold"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2 font-sans">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-gray-500">ตัวเลือกเกณฑ์คะแนน (Rating Options)</span>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => addOption(cIdx)}
-                                                    className="text-xs text-mac-blue hover:underline flex items-center"
-                                                >
-                                                    <Icons.Plus width="12" height="12" className="mr-0.5" /> เพิ่มตัวเลือกคะแนน
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {c.options.map((opt, oIdx) => (
-                                                    <div key={oIdx} className="flex gap-2 items-start bg-gray-50 p-2 rounded-lg">
-                                                        <div className="w-16">
-                                                            <label className="block text-[10px] text-gray-400">คะแนน</label>
-                                                            <input 
-                                                                type="number" 
-                                                                value={opt.score}
-                                                                onChange={(e) => updateOption(cIdx, oIdx, 'score', Number(e.target.value))}
-                                                                className="w-full px-2 py-1 border rounded text-xs text-center"
-                                                            />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <label className="block text-[10px] text-gray-400">คำอธิบายคุณภาพเกณฑ์ (Rubric)</label>
-                                                            <input 
-                                                                type="text" 
-                                                                value={opt.label}
-                                                                onChange={(e) => updateOption(cIdx, oIdx, 'label', e.target.value)}
-                                                                className="w-full px-2 py-1 border rounded text-xs"
-                                                                placeholder="คำอธิบายเกณฑ์ที่จะได้รับคะแนนนี้..."
-                                                            />
-                                                        </div>
-                                                        {c.options.length > 1 && (
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => removeOption(cIdx, oIdx)}
-                                                                className="mt-4 p-1 text-gray-400 hover:text-red-500"
-                                                            >
-                                                                <Icons.X width="14" height="14" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
+                                        type
         
 // --- Component: SubjectsView ---
         const SubjectsView = ({ subjectList, onSaveSubject, onDeleteSubject }) => {
